@@ -57,27 +57,32 @@ class AuthService:
 
         hashed_password = get_password_hash(data.password)
 
+        requires_verification = role == UserRole.STUDENT
+
         user_doc = {
             "email": data.email,
             "full_name": data.full_name,
             "hashed_password": hashed_password,
             "role": role.value,
-            "is_email_verified": False,  # later change for OTP flow
+            # Only students require email verification via OTP
+            "is_email_verified": not requires_verification,
         }
 
         created = await self.user_repo.create(user_doc)
 
-        # Send OTP for email verification (non-blocking - user is created even if email fails)
-        try:
-            db = get_db()
-            otp_repo = OTPRepository(db)
-            otp_service = OTPService(otp_repo, self.user_repo)
-            await otp_service.send_verification_otp(data.email)
-        except Exception as e:
-            # Log error but don't fail registration
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Failed to send OTP email during registration: {e}")
+        # Only trigger OTP flow for students (faculty/alumni are auto-verified for now)
+        if requires_verification:
+            # Send OTP for email verification (non-blocking - user is created even if email fails)
+            try:
+                db = get_db()
+                otp_repo = OTPRepository(db)
+                otp_service = OTPService(otp_repo, self.user_repo)
+                await otp_service.send_verification_otp(data.email)
+            except Exception as e:
+                # Log error but don't fail registration
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Failed to send OTP email during registration: {e}")
 
         return UserInDB(
             id=str(created["_id"]),

@@ -170,3 +170,4 @@ async def get_latest_otp(
         "is_used": otp_record["is_used"],
         "message": "WARNING: This endpoint should be removed in production!"
     }
+

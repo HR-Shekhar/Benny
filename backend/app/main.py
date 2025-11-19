@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
+from app.routers import auth as auth_router
+from app.routers import faculty_profile as faculty_router
+from app.db import init_indexes
 from app.routers import auth as auth_router
 
 app = FastAPI(title="Benny WebApp Backend")
@@ -19,6 +21,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router.router)
+app.include_router(faculty_router.router)
 
 
 @app.get("/")
